@@ -1,10 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>欣南現場快算 v3</title>
+<title>欣南現場快算 v4</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2f2ed;color:#1a1a1a;font-size:15px;min-height:100vh}
@@ -53,13 +52,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <body>
 
 <div class="header">
-  <h1>🔧 欣南現場快算 v3</h1>
+  <h1>🔧 欣南現場快算 v4</h1>
   <p>設計報價單價 · 所有金額均含稅（×1.05）</p>
 </div>
 
 <div class="tabs">
   <div class="tab active" onclick="sw(0)">管線延伸</div>
-  <div class="tab" onclick="sw(1)">焊接出口</div>
+  <div class="tab" onclick="sw(1)">新增出口</div>
   <div class="tab" onclick="sw(2)">取心鑽孔</div>
   <div class="tab" onclick="sw(3)">安裝開關</div>
   <div class="tab" onclick="sw(4)">組合估算</div>
@@ -135,11 +134,19 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 </div>
 
-<!-- ===== 模組二：焊接出口 ===== -->
+<!-- ===== 模組二：新增出口 ===== -->
 <div class="page" id="p1">
 <div class="card">
-  <div class="card-title">🔧 焊接出口（商業用戶）</div>
-  <div class="info">每出口包含：1"可焊三通、GIP 1" 0.1m、1"×3/4"異徑短接、1/2"龍頭考克、焊口3口（2口以上）、防蝕塗裝、丹曹帶+PCP膠帶 0.5m</div>
+  <div class="card-title">🔧 新增出口（商業用戶）</div>
+  <div class="row">
+    <label>接合工法</label>
+    <select id="m2_method" onchange="m2MethodChange()">
+      <option value="weld">焊接</option>
+      <option value="screw">牙接</option>
+    </select>
+  </div>
+  <div class="info" id="m2_info_weld">每出口包含：1"可焊三通、GIP 1" 0.1m、1"接頭、1"×3/4"異徑短接、1/2"龍頭考克、焊口3口（2口以上）、防蝕塗裝、丹曹帶+PCP膠帶 0.5m</div>
+  <div class="info" id="m2_info_screw" style="display:none">每出口包含：1"三通（GIP牙接）、GIP 1" 0.1m、1"接頭、1"×3/4"異徑短接、1/2"龍頭考克、明管牙接工資 1m（日間）、丹曹帶+PCP膠帶 0.5m</div>
   <div class="row">
     <label>出口數量 <span class="tag">個</span></label>
     <input type="number" id="m2_qty" value="1" min="1" step="1">
@@ -306,9 +313,16 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <div class="check-row">
     <input type="checkbox" id="c_outlet" onchange="toggleCombo('outlet')">
-    <label for="c_outlet">焊接出口</label>
+    <label for="c_outlet">新增出口</label>
   </div>
   <div id="combo_outlet" style="display:none;padding:10px 0 6px 4px">
+    <div class="row">
+      <label>接合工法</label>
+      <select id="cm_outlet_method">
+        <option value="weld">焊接</option>
+        <option value="screw">牙接</option>
+      </select>
+    </div>
     <div class="row">
       <label>出口數量 <span class="tag">個</span></label>
       <input type="number" id="cm_outlet_qty" value="1" min="1" step="1">
@@ -537,11 +551,17 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
   <div class="pset">
     <h4>焊接出口材料</h4>
     <div class="p-row"><span>1" 可焊三通</span><input type="number" id="s_tee" value="183"><em>元</em></div>
+    <div class="p-row"><span>1" 接頭</span><input type="number" id="s_conn1" value="47"><em>元</em></div>
     <div class="p-row"><span>GIP 1"（每公尺）</span><input type="number" id="s_gip1m" value="226"><em>元</em></div>
     <div class="p-row"><span>1"×3/4" 異徑短接</span><input type="number" id="s_red" value="47"><em>元</em></div>
     <div class="p-row"><span>1/2" 龍頭考克</span><input type="number" id="s_cock_hf" value="266"><em>元</em></div>
     <div class="p-row"><span>焊口 1"（2口以上/口）</span><input type="number" id="s_weld1" value="690"><em>元</em></div>
     <div class="p-row"><span>防蝕塗裝 1"（每口）</span><input type="number" id="s_paint_weld1" value="159"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>牙接出口材料</h4>
+    <div class="p-row"><span>1" 三通（GIP 牙接用）</span><input type="number" id="s_tee_screw" value="120"><em>元</em></div>
+    <p style="font-size:11px;color:#888;margin:4px 0 0 2px">※ 1"接頭、GIP、異徑短接、龍頭考克、丹曹帶+PCP膠帶沿用焊接出口欄位；工資沿用「明管牙接工資日間 1"」欄位</p>
   </div>
 
   <div class="pset">
@@ -697,6 +717,11 @@ function toggleCombo(k){
   document.getElementById(map[k]).style.display=document.getElementById(chk[k]).checked?'block':'none';
 }
 function updateCockInfo(){}
+function m2MethodChange(){
+  const m=document.getElementById('m2_method').value;
+  document.getElementById('m2_info_weld').style.display=m==='weld'?'':'none';
+  document.getElementById('m2_info_screw').style.display=m==='screw'?'':'none';
+}
 
 /* ══════════════════════════════════════
    核心計算函式
@@ -730,29 +755,52 @@ function pipeCalc(sz,type,method,night,len,fixType,fixQty,pcpM,paintOn){
   return {sub,rows};
 }
 
-/* 焊接出口 */
-function outletCalc(qty){
-  const tee=g('s_tee');
+/* 新增出口 */
+function outletCalc(qty, method){
   const gip=g('s_gip1m')*0.1;
+  const conn=g('s_conn1');       // 1"接頭（焊接/牙接共用）
   const red=g('s_red');
   const cock=g('s_cock_hf');
-  const weld=g('s_weld1')*3;
-  const paintW=g('s_paint_weld1');
   const danzao=g('s_danzao')*0.5;
   const pcptape=g('s_pcptape')*0.5;
-  const perUnit=tee+gip+red+cock+weld+paintW+danzao+pcptape;
-  const sub=perUnit*qty;
-  const rows=[
-    {l:`1" 可焊三通 × ${qty}`,v:tee*qty},
-    {l:`GIP 1" × 0.1m × ${qty}`,v:gip*qty},
-    {l:`1"×3/4" 異徑短接 × ${qty}`,v:red*qty},
-    {l:`1/2" 龍頭考克 × ${qty}`,v:cock*qty},
-    {l:`焊口 1"（3口，2口以上） × ${qty}`,v:weld*qty},
-    {l:`防蝕塗裝 1" × ${qty}口`,v:paintW*qty},
-    {l:`丹曹帶 0.5m × ${qty}`,v:danzao*qty},
-    {l:`PCP膠帶 0.5m × ${qty}`,v:pcptape*qty},
-  ];
-  return {sub,rows};
+
+  if(method==='weld'){
+    const tee=g('s_tee');
+    const weld=g('s_weld1')*3;
+    const paintW=g('s_paint_weld1');
+    const perUnit=tee+gip+conn+red+cock+weld+paintW+danzao+pcptape;
+    const sub=perUnit*qty;
+    const rows=[
+      {l:`1" 可焊三通 × ${qty}`,v:tee*qty},
+      {l:`GIP 1" × 0.1m × ${qty}`,v:gip*qty},
+      {l:`1" 接頭 × ${qty}`,v:conn*qty},
+      {l:`1"×3/4" 異徑短接 × ${qty}`,v:red*qty},
+      {l:`1/2" 龍頭考克 × ${qty}`,v:cock*qty},
+      {l:`焊口 1"（3口，2口以上） × ${qty}`,v:weld*qty},
+      {l:`防蝕塗裝 1" × ${qty}口`,v:paintW*qty},
+      {l:`丹曹帶 0.5m × ${qty}`,v:danzao*qty},
+      {l:`PCP膠帶 0.5m × ${qty}`,v:pcptape*qty},
+    ];
+    return {sub,rows};
+  } else {
+    // 牙接出口：1"三通(牙接用) + GIP 0.1m + 1"接頭 + 異徑短接 + 龍頭考克 + 牙接工資1m(日間明管1") + 丹曹帶+PCP膠帶 0.5m
+    const tee=g('s_tee_screw');
+    const wageU=g('s_bsd1');      // 明管牙接日間 1" per m
+    const wage=wageU*1;           // 1m
+    const perUnit=tee+gip+conn+red+cock+wage+danzao+pcptape;
+    const sub=perUnit*qty;
+    const rows=[
+      {l:`1" 三通（GIP牙接） × ${qty}`,v:tee*qty},
+      {l:`GIP 1" × 0.1m × ${qty}`,v:gip*qty},
+      {l:`1" 接頭 × ${qty}`,v:conn*qty},
+      {l:`1"×3/4" 異徑短接 × ${qty}`,v:red*qty},
+      {l:`1/2" 龍頭考克 × ${qty}`,v:cock*qty},
+      {l:`明管牙接工資 1"×1m（日間） × ${qty}`,v:wage*qty},
+      {l:`丹曹帶 0.5m × ${qty}`,v:danzao*qty},
+      {l:`PCP膠帶 0.5m × ${qty}`,v:pcptape*qty},
+    ];
+    return {sub,rows};
+  }
 }
 
 /* 安裝開關 */
@@ -818,8 +866,9 @@ function calcM1(){
 }
 function calcM2(){
   const qty=g('m2_qty');
+  const method=document.getElementById('m2_method').value;
   if(qty<1){alert('請輸入出口數量');return;}
-  const {sub,rows}=outletCalc(qty);
+  const {sub,rows}=outletCalc(qty,method);
   showResult('m2',T(sub),sub,rows);
 }
 function calcM3(){
@@ -864,7 +913,8 @@ function calcCombo(){
   }
   if(hasOutlet){
     const qty=g('cm_outlet_qty');
-    const {sub,rows}=outletCalc(qty);
+    const method=document.getElementById('cm_outlet_method').value;
+    const {sub,rows}=outletCalc(qty,method);
     totalSub+=sub;
     rows.forEach(r=>allRows.push({l:'【出口】'+r.l,v:r.v}));
   }
