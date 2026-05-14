@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>欣南現場快算 v3</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2f2ed;color:#1a1a1a;font-size:15px;min-height:100vh}
+.header{background:#fff;border-bottom:1px solid #e0e0d8;padding:12px 16px;position:sticky;top:0;z-index:100}
+.header h1{font-size:17px;font-weight:600}
+.header p{font-size:12px;color:#888;margin-top:2px}
+.tabs{display:flex;background:#fff;border-bottom:1px solid #e0e0d8;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab{flex:0 0 auto;padding:10px 13px;font-size:13px;font-weight:500;color:#888;border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;transition:all .15s}
+.tab.active{color:#1a1a1a;border-bottom-color:#1a1a1a}
+.page{display:none;padding:14px 14px 80px}
+.page.active{display:block}
+.card{background:#fff;border-radius:12px;border:1px solid #e8e8e0;padding:15px;margin-bottom:12px}
+.card-title{font-size:14px;font-weight:600;margin-bottom:12px;color:#1a1a1a}
+.row{margin-bottom:12px}
+label{display:block;font-size:12px;color:#555;font-weight:500;margin-bottom:4px}
+select,input[type=number]{width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:15px;color:#1a1a1a;background:#fff;-webkit-appearance:none;appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath d='M1 3l4 4 4-4' stroke='%23999' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center;padding-right:30px}
+.tag{display:inline-block;background:#f0f0e8;color:#666;font-size:11px;padding:1px 6px;border-radius:4px;margin-left:4px;font-weight:400}
+.btn{width:100%;padding:13px;background:#1a1a1a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;margin-top:4px}
+.btn:active{background:#333}
+.btn-green{background:#0f6e3a}
+.result{background:#eef4ff;border-radius:12px;padding:14px;margin-top:12px;display:none}
+.result.show{display:block}
+.r-label{font-size:11px;color:#556;font-weight:500;text-transform:uppercase;letter-spacing:.4px}
+.r-amount{font-size:34px;font-weight:700;letter-spacing:-1.5px;color:#0a1a5c;margin:2px 0 4px}
+.r-pretax{font-size:12px;color:#778;margin-bottom:10px}
+.r-rows{border-top:1px solid #ccd6f0;padding-top:10px;margin-top:8px}
+.r-row{display:flex;justify-content:space-between;font-size:13px;color:#445;padding:2px 0}
+.r-row.tot{font-weight:600;color:#1a1a1a;border-top:1px solid #ccd6f0;margin-top:5px;padding-top:6px}
+.tip{background:#fff8e6;border:1px solid #f0dea0;border-radius:8px;padding:9px 11px;font-size:12px;color:#7a5800;margin-top:8px}
+.info{background:#f0f7ff;border-radius:8px;padding:9px 11px;font-size:12px;color:#1a3a6a;margin-bottom:12px}
+.check-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0e8}
+.check-row:last-child{border-bottom:none}
+.check-row input[type=checkbox]{width:18px;height:18px;flex-shrink:0;cursor:pointer;accent-color:#1a1a1a}
+.check-row label{font-size:14px;color:#1a1a1a;margin:0;cursor:pointer;font-weight:400}
+.pset{margin-bottom:16px}
+.pset h4{font-size:12px;font-weight:600;color:#999;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px}
+.p-row{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#fff;border-radius:8px;border:1px solid #e8e8e0;margin-bottom:6px}
+.p-row span{flex:1;font-size:13px;color:#1a1a1a}
+.p-row input{width:85px;padding:5px 8px;font-size:13px;text-align:right}
+.p-row em{font-size:11px;color:#aaa;min-width:16px}
+.save-btn{width:100%;padding:12px;background:#0f6e3a;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}
+.save-ok{text-align:center;font-size:13px;color:#0f6e3a;margin-top:6px;display:none}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>🔧 欣南現場快算 v3</h1>
+  <p>設計報價單價 · 所有金額均含稅（×1.05）</p>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="sw(0)">管線延伸</div>
+  <div class="tab" onclick="sw(1)">焊接出口</div>
+  <div class="tab" onclick="sw(2)">取心鑽孔</div>
+  <div class="tab" onclick="sw(3)">安裝開關</div>
+  <div class="tab" onclick="sw(4)">組合估算</div>
+  <div class="tab" onclick="sw(5)">⚙ 單價</div>
+</div>
+
+<!-- ===== 模組一：管線延伸 ===== -->
+<div class="page active" id="p0">
+<div class="card">
+  <div class="card-title">📏 管線延伸</div>
+  <div class="row">
+    <label>管徑</label>
+    <select id="m1_sz" onchange="m1SzChange()">
+      <option value="075">3/4"（20mm）</option>
+      <option value="1">1"（25mm）</option>
+      <option value="125">1-1/4"（32mm）</option>
+      <option value="15">1-1/2"（40mm）</option>
+      <option value="2">2"（50mm）</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>配管類型</label>
+    <select id="m1_type" onchange="m1TypeChange()">
+      <option value="bright">明管（GIP）</option>
+      <option value="darkB">暗管乙（天花板/AC路面，PCP）</option>
+      <option value="darkC">暗管丙（RC/磚牆打除，PCP）</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>接合工法</label>
+    <select id="m1_method">
+      <option value="screw">牙接</option>
+      <option value="weld">焊接</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>施工時段</label>
+    <select id="m1_time">
+      <option value="day">日間</option>
+      <option value="night">夜間</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>管線長度 <span class="tag">公尺</span></label>
+    <input type="number" id="m1_len" value="5" min="0.5" step="0.5" oninput="m1AutoFix()">
+  </div>
+  <div class="row" id="m1_fix_row">
+    <label>固定方式</label>
+    <select id="m1_fix" onchange="m1AutoFix()">
+      <option value="clamp">固定夾（3/4" 適用）</option>
+      <option value="steel">不鏽鋼角鋼架（2m/只）</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>固定件數量 <span class="tag">只/組</span></label>
+    <input type="number" id="m1_fix_qty" value="3" min="0" step="1">
+  </div>
+  <div class="row">
+    <label>PCP 膠帶 <span class="tag">M</span></label>
+    <input type="number" id="m1_pcp" value="1" min="0" step="0.5">
+  </div>
+  <div class="check-row" style="border-bottom:none;padding-bottom:0">
+    <input type="checkbox" id="m1_paint">
+    <label for="m1_paint">需要油漆標示</label>
+  </div>
+  <button class="btn" style="margin-top:12px" onclick="calcM1()">計算報價</button>
+</div>
+<div class="result" id="m1_res">
+  <div class="r-label">預估含稅金額（設計報價）</div>
+  <div class="r-amount" id="m1_amt"></div>
+  <div class="r-pretax" id="m1_pre"></div>
+  <div class="r-rows" id="m1_rows"></div>
+</div>
+</div>
+
+<!-- ===== 模組二：焊接出口 ===== -->
+<div class="page" id="p1">
+<div class="card">
+  <div class="card-title">🔧 焊接出口（商業用戶）</div>
+  <div class="info">每出口包含：1"可焊三通、GIP 1" 0.1m、1"×3/4"異徑短接、1/2"龍頭考克、焊口3口（2口以上）、防蝕塗裝、丹曹帶+PCP膠帶 0.5m</div>
+  <div class="row">
+    <label>出口數量 <span class="tag">個</span></label>
+    <input type="number" id="m2_qty" value="1" min="1" step="1">
+  </div>
+  <button class="btn" onclick="calcM2()">計算報價</button>
+</div>
+<div class="result" id="m2_res">
+  <div class="r-label">預估含稅金額（設計報價）</div>
+  <div class="r-amount" id="m2_amt"></div>
+  <div class="r-pretax" id="m2_pre"></div>
+  <div class="r-rows" id="m2_rows"></div>
+</div>
+<div class="tip">⚠️ 如出口管徑非 1"，或需另加安全考克，請至「安裝開關」補計。</div>
+</div>
+
+<!-- ===== 模組三：取心鑽孔 ===== -->
+<div class="page" id="p2">
+<div class="card">
+  <div class="card-title">🔩 取心鑽孔（穿牆）</div>
+  <div class="row">
+    <label>鑽孔管徑</label>
+    <select id="m3_sz">
+      <option value="075_1">3/4" 或 1"</option>
+      <option value="15">1-1/2"</option>
+      <option value="2">2"</option>
+      <option value="3">3"</option>
+      <option value="4">4"</option>
+      <option value="6">6"</option>
+      <option value="8">8"</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>鑽孔數量 <span class="tag">處</span></label>
+    <input type="number" id="m3_qty" value="1" min="1" step="1">
+  </div>
+  <div class="tip" style="margin-bottom:8px">💡 單價以牆厚 30cm 為基準，含矽利康修補填縫</div>
+  <button class="btn" onclick="calcM3()">計算報價</button>
+</div>
+<div class="result" id="m3_res">
+  <div class="r-label">預估含稅金額（設計報價）</div>
+  <div class="r-amount" id="m3_amt"></div>
+  <div class="r-pretax" id="m3_pre"></div>
+  <div class="r-rows" id="m3_rows"></div>
+</div>
+</div>
+
+<!-- ===== 模組四：安裝開關 ===== -->
+<div class="page" id="p3">
+<div class="card">
+  <div class="card-title">🚿 安裝開關</div>
+  <div class="row">
+    <label>開關類型</label>
+    <select id="m4_type" onchange="m4TypeChange()">
+      <option value="cock">安全考克（牙口球閥）</option>
+      <option value="flange">法蘭球閥</option>
+    </select>
+  </div>
+
+  <!-- 安全考克 -->
+  <div id="m4_cock_block">
+    <div class="info" id="m4_cock_info">工資＝1m 牙接工資＋2口焊接（2口以上）＋丹曹帶+PCP膠帶 0.5m</div>
+    <div class="row">
+      <label>考克管徑</label>
+      <select id="m4_cock_sz" onchange="updateCockInfo()">
+        <option value="05">1/2"</option>
+        <option value="075">3/4"</option>
+        <option value="1">1"</option>
+        <option value="125">1-1/4"</option>
+        <option value="15">1-1/2"</option>
+        <option value="2">2"</option>
+        <option value="25">2-1/2"</option>
+        <option value="3">3"</option>
+        <option value="4">4"</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- 法蘭球閥 -->
+  <div id="m4_fl_block" style="display:none">
+    <div class="row">
+      <label>法蘭球閥口徑</label>
+      <select id="m4_fl_sz">
+        <option value="2_150">2"×150#</option>
+        <option value="2_300">2"×300#</option>
+        <option value="3_150">3"×150#</option>
+        <option value="3_300">3"×300#</option>
+        <option value="4_150">4"×150#</option>
+        <option value="6_150">6"×150#</option>
+        <option value="6_300">6"×300#</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row">
+    <label>數量 <span class="tag">只</span></label>
+    <input type="number" id="m4_qty" value="1" min="1" step="1">
+  </div>
+  <div class="check-row" style="border-bottom:none;padding-bottom:0">
+    <input type="checkbox" id="m4_install" checked>
+    <label for="m4_install">含安裝工資</label>
+  </div>
+  <button class="btn" style="margin-top:12px" onclick="calcM4()">計算報價</button>
+</div>
+<div class="result" id="m4_res">
+  <div class="r-label">預估含稅金額（設計報價）</div>
+  <div class="r-amount" id="m4_amt"></div>
+  <div class="r-pretax" id="m4_pre"></div>
+  <div class="r-rows" id="m4_rows"></div>
+</div>
+</div>
+
+<!-- ===== 模組五：組合估算 ===== -->
+<div class="page" id="p4">
+<div class="card">
+  <div class="card-title">🧮 組合估算</div>
+
+  <div class="check-row">
+    <input type="checkbox" id="c_pipe" onchange="toggleCombo('pipe')">
+    <label for="c_pipe">管線延伸</label>
+  </div>
+  <div id="combo_pipe" style="display:none;padding:10px 0 6px 4px">
+    <div class="row">
+      <label>管徑</label>
+      <select id="cm_sz">
+        <option value="075">3/4"</option>
+        <option value="1">1"</option>
+        <option value="125">1-1/4"</option>
+        <option value="15">1-1/2"</option>
+        <option value="2">2"</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>配管類型</label>
+      <select id="cm_type">
+        <option value="bright">明管（GIP）</option>
+        <option value="darkB">暗管乙（PCP）</option>
+        <option value="darkC">暗管丙（RC打除，PCP）</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>接合工法</label>
+      <select id="cm_method">
+        <option value="screw">牙接</option>
+        <option value="weld">焊接</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>施工時段</label>
+      <select id="cm_time"><option value="day">日間</option><option value="night">夜間</option></select>
+    </div>
+    <div class="row">
+      <label>長度 <span class="tag">m</span></label>
+      <input type="number" id="cm_len" value="5" min="0.5" step="0.5">
+    </div>
+    <div class="row">
+      <label>固定件數量 <span class="tag">只</span></label>
+      <input type="number" id="cm_fix" value="3" min="0" step="1">
+    </div>
+    <div class="check-row" style="padding-top:4px;padding-bottom:4px">
+      <input type="checkbox" id="cm_paint">
+      <label for="cm_paint">油漆標示</label>
+    </div>
+  </div>
+
+  <div class="check-row">
+    <input type="checkbox" id="c_outlet" onchange="toggleCombo('outlet')">
+    <label for="c_outlet">焊接出口</label>
+  </div>
+  <div id="combo_outlet" style="display:none;padding:10px 0 6px 4px">
+    <div class="row">
+      <label>出口數量 <span class="tag">個</span></label>
+      <input type="number" id="cm_outlet_qty" value="1" min="1" step="1">
+    </div>
+  </div>
+
+  <div class="check-row">
+    <input type="checkbox" id="c_drill" onchange="toggleCombo('drill')">
+    <label for="c_drill">取心鑽孔</label>
+  </div>
+  <div id="combo_drill" style="display:none;padding:10px 0 6px 4px">
+    <div class="row">
+      <label>管徑</label>
+      <select id="cm_drill_sz">
+        <option value="075_1">3/4" / 1"</option>
+        <option value="15">1-1/2"</option>
+        <option value="2">2"</option>
+        <option value="3">3"</option>
+        <option value="4">4"</option>
+        <option value="6">6"</option>
+        <option value="8">8"</option>
+      </select>
+    </div>
+    <div class="row">
+      <label>孔數 <span class="tag">處</span></label>
+      <input type="number" id="cm_drill_qty" value="1" min="1" step="1">
+    </div>
+  </div>
+
+  <div class="check-row">
+    <input type="checkbox" id="c_sw" onchange="toggleCombo('sw')">
+    <label for="c_sw">安裝開關</label>
+  </div>
+  <div id="combo_sw" style="display:none;padding:10px 0 6px 4px">
+    <div class="row">
+      <label>類型</label>
+      <select id="cm_sw_type" onchange="cmSwTypeChange()">
+        <option value="cock">安全考克</option>
+        <option value="flange">法蘭球閥</option>
+      </select>
+    </div>
+    <div id="cm_cock_block">
+      <div class="row">
+        <label>考克管徑</label>
+        <select id="cm_cock_sz">
+          <option value="05">1/2"</option>
+          <option value="075">3/4"</option>
+          <option value="1">1"</option>
+          <option value="125">1-1/4"</option>
+          <option value="15">1-1/2"</option>
+          <option value="2">2"</option>
+          <option value="25">2-1/2"</option>
+          <option value="3">3"</option>
+          <option value="4">4"</option>
+        </select>
+      </div>
+    </div>
+    <div id="cm_fl_block" style="display:none">
+      <div class="row">
+        <label>法蘭球閥口徑</label>
+        <select id="cm_fl_sz">
+          <option value="2_150">2"×150#</option>
+          <option value="2_300">2"×300#</option>
+          <option value="3_150">3"×150#</option>
+          <option value="3_300">3"×300#</option>
+          <option value="4_150">4"×150#</option>
+          <option value="6_150">6"×150#</option>
+          <option value="6_300">6"×300#</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <label>數量 <span class="tag">只</span></label>
+      <input type="number" id="cm_sw_qty" value="1" min="1">
+    </div>
+  </div>
+
+  <button class="btn btn-green" onclick="calcCombo()" style="margin-top:12px">計算組合總價</button>
+</div>
+<div class="result" id="m5_res">
+  <div class="r-label">組合含稅總金額</div>
+  <div class="r-amount" id="m5_amt"></div>
+  <div class="r-pretax" id="m5_pre"></div>
+  <div class="r-rows" id="m5_rows"></div>
+</div>
+</div>
+
+<!-- ===== 單價設定 ===== -->
+<div class="page" id="p5">
+<div class="card">
+  <p style="font-size:13px;color:#666;margin-bottom:14px">所有單價為<strong>未稅</strong>，系統自動×1.05。修改後按「儲存」即更新。</p>
+
+  <div class="pset">
+    <h4>管材（每公尺）</h4>
+    <div class="p-row"><span>GIP 3/4"</span><input type="number" id="s_gip075" value="171"><em>元</em></div>
+    <div class="p-row"><span>GIP 1"</span><input type="number" id="s_gip1" value="226"><em>元</em></div>
+    <div class="p-row"><span>GIP 1-1/4"</span><input type="number" id="s_gip125" value="229"><em>元</em></div>
+    <div class="p-row"><span>GIP 1-1/2"</span><input type="number" id="s_gip15" value="442"><em>元</em></div>
+    <div class="p-row"><span>GIP 2"</span><input type="number" id="s_gip2" value="525"><em>元</em></div>
+    <div class="p-row"><span>PCP 3/4"</span><input type="number" id="s_pcp075" value="307"><em>元</em></div>
+    <div class="p-row"><span>PCP 1"</span><input type="number" id="s_pcp1" value="382"><em>元</em></div>
+    <div class="p-row"><span>PCP 1-1/4"</span><input type="number" id="s_pcp125" value="577"><em>元</em></div>
+    <div class="p-row"><span>PCP 1-1/2"</span><input type="number" id="s_pcp15" value="566"><em>元</em></div>
+    <div class="p-row"><span>PCP 2"</span><input type="number" id="s_pcp2" value="698"><em>元</em></div>
+  </div>
+
+  <div class="pset">
+    <h4>明管 牙接工資 日間（GIP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_bsd075" value="183"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_bsd1" value="206"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_bsd125" value="218"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_bsd15" value="253"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_bsd2" value="325"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>明管 牙接工資 夜間（GIP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_bsn075" value="365"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_bsn1" value="404"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_bsn125" value="439"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_bsn15" value="528"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_bsn2" value="633"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>明管 焊接工資 日間（GIP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_bwd075" value="161"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_bwd1" value="184"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_bwd125" value="184"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_bwd15" value="263"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_bwd2" value="357"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>明管 焊接工資 夜間（GIP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_bwn075" value="323"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_bwn1" value="370"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_bwn125" value="370"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_bwn15" value="526"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_bwn2" value="715"><em>元</em></div>
+  </div>
+
+  <div class="pset">
+    <h4>暗管乙 牙接工資 日間（PCP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_dbsd075" value="283"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_dbsd1" value="339"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_dbsd125" value="450"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_dbsd15" value="450"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_dbsd2" value="526"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>暗管乙 牙接工資 夜間（PCP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_dbsn075" value="568"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_dbsn1" value="679"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_dbsn125" value="901"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_dbsn15" value="901"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_dbsn2" value="1054"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>暗管乙 焊接工資 日間（PCP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_dbwd075" value="284"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_dbwd1" value="325"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_dbwd125" value="398"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_dbwd15" value="398"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_dbwd2" value="474"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>暗管乙 焊接工資 夜間（PCP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_dbwn075" value="569"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_dbwn1" value="651"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_dbwn125" value="798"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_dbwn15" value="798"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_dbwn2" value="950"><em>元</em></div>
+  </div>
+
+  <div class="pset">
+    <h4>暗管丙 牙接工資 日間（PCP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_dcsd075" value="698"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_dcsd1" value="765"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_dcsd125" value="910"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_dcsd15" value="910"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_dcsd2" value="974"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>暗管丙 牙接工資 夜間（PCP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_dcsn075" value="1397"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_dcsn1" value="1530"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_dcsn125" value="1823"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_dcsn15" value="1823"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_dcsn2" value="1951"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>暗管丙 焊接工資 日間（PCP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_dcwd075" value="512"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_dcwd1" value="567"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_dcwd125" value="671"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_dcwd15" value="671"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_dcwd2" value="721"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>暗管丙 焊接工資 夜間（PCP/每公尺）</h4>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_dcwn075" value="1025"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_dcwn1" value="1137"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_dcwn125" value="1345"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_dcwn15" value="1345"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_dcwn2" value="1446"><em>元</em></div>
+  </div>
+
+  <div class="pset">
+    <h4>固定件（每只/組）</h4>
+    <div class="p-row"><span>固定夾 3/4"、1"</span><input type="number" id="s_clamp_s" value="340"><em>元</em></div>
+    <div class="p-row"><span>固定夾 1-1/2"、2"</span><input type="number" id="s_clamp_m" value="513"><em>元</em></div>
+    <div class="p-row"><span>角鋼架 3/4"、1"</span><input type="number" id="s_brk_s" value="1792"><em>元</em></div>
+    <div class="p-row"><span>角鋼架 1-1/2"、2"</span><input type="number" id="s_brk_m" value="2304"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>防蝕耗材</h4>
+    <div class="p-row"><span>PCP 膠帶（每公尺）</span><input type="number" id="s_pcptape" value="93"><em>元</em></div>
+    <div class="p-row"><span>丹曹帶（每公尺）</span><input type="number" id="s_danzao" value="60"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>油漆標示（每公尺）</h4>
+    <div class="p-row"><span>3m以下 3/4"、1"</span><input type="number" id="s_paint_ss" value="357"><em>元</em></div>
+    <div class="p-row"><span>3m以下 1-1/2"、2"</span><input type="number" id="s_paint_ms" value="716"><em>元</em></div>
+    <div class="p-row"><span>3m以上 3/4"、1"</span><input type="number" id="s_paint_sl" value="460"><em>元</em></div>
+    <div class="p-row"><span>3m以上 1-1/2"、2"</span><input type="number" id="s_paint_ml" value="920"><em>元</em></div>
+  </div>
+
+  <div class="pset">
+    <h4>焊接出口材料</h4>
+    <div class="p-row"><span>1" 可焊三通</span><input type="number" id="s_tee" value="183"><em>元</em></div>
+    <div class="p-row"><span>GIP 1"（每公尺）</span><input type="number" id="s_gip1m" value="226"><em>元</em></div>
+    <div class="p-row"><span>1"×3/4" 異徑短接</span><input type="number" id="s_red" value="47"><em>元</em></div>
+    <div class="p-row"><span>1/2" 龍頭考克</span><input type="number" id="s_cock_hf" value="266"><em>元</em></div>
+    <div class="p-row"><span>焊口 1"（2口以上/口）</span><input type="number" id="s_weld1" value="690"><em>元</em></div>
+    <div class="p-row"><span>防蝕塗裝 1"（每口）</span><input type="number" id="s_paint_weld1" value="159"><em>元</em></div>
+  </div>
+
+  <div class="pset">
+    <h4>焊口工資 2口以上（每口）</h4>
+    <div class="p-row"><span>3/4"、1"</span><input type="number" id="s_weld_075_1" value="690"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_weld_15" value="1034"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_weld_2" value="1377"><em>元</em></div>
+    <div class="p-row"><span>3"</span><input type="number" id="s_weld_3" value="1889"><em>元</em></div>
+    <div class="p-row"><span>4"</span><input type="number" id="s_weld_4" value="2408"><em>元</em></div>
+  </div>
+
+  <div class="pset">
+    <h4>取心鑽孔（每處）</h4>
+    <div class="p-row"><span>3/4"、1"</span><input type="number" id="s_d075" value="1383"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_d15" value="1528"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_d2" value="1528"><em>元</em></div>
+    <div class="p-row"><span>3"</span><input type="number" id="s_d3" value="2225"><em>元</em></div>
+    <div class="p-row"><span>4"</span><input type="number" id="s_d4" value="2487"><em>元</em></div>
+    <div class="p-row"><span>6"</span><input type="number" id="s_d6" value="4006"><em>元</em></div>
+    <div class="p-row"><span>8"</span><input type="number" id="s_d8" value="15626"><em>元</em></div>
+  </div>
+
+  <div class="pset">
+    <h4>安全考克材料</h4>
+    <div class="p-row"><span>1/2"</span><input type="number" id="s_ck05" value="219"><em>元</em></div>
+    <div class="p-row"><span>3/4"</span><input type="number" id="s_ck075" value="357"><em>元</em></div>
+    <div class="p-row"><span>1"</span><input type="number" id="s_ck1" value="460"><em>元</em></div>
+    <div class="p-row"><span>1-1/4"</span><input type="number" id="s_ck125" value="496"><em>元</em></div>
+    <div class="p-row"><span>1-1/2"</span><input type="number" id="s_ck15" value="1002"><em>元</em></div>
+    <div class="p-row"><span>2"</span><input type="number" id="s_ck2" value="1715"><em>元</em></div>
+    <div class="p-row"><span>2-1/2"</span><input type="number" id="s_ck25" value="2278"><em>元</em></div>
+    <div class="p-row"><span>3"</span><input type="number" id="s_ck3" value="5434"><em>元</em></div>
+    <div class="p-row"><span>4"</span><input type="number" id="s_ck4" value="7108"><em>元</em></div>
+  </div>
+  <div class="pset">
+    <h4>安全考克 牙接工資（每公尺，對應管徑）</h4>
+    <p style="font-size:11px;color:#888;margin-bottom:6px">安裝工資 = 1m 牙接工資（對應管徑日間明管）＋ 2口焊接（2口以上）＋ 丹曹帶+PCP膠帶 0.5m</p>
+    <p style="font-size:11px;color:#888;margin-bottom:6px">牙接工資沿用「明管牙接工資日間」欄位，焊口工資沿用「焊口工資2口以上」欄位，無需另設。</p>
+  </div>
+
+  <div class="pset">
+    <h4>法蘭球閥材料</h4>
+    <div class="p-row"><span>2"×150#</span><input type="number" id="s_fl2_150" value="5772"><em>元</em></div>
+    <div class="p-row"><span>2"×300#</span><input type="number" id="s_fl2_300" value="13227"><em>元</em></div>
+    <div class="p-row"><span>3"×150#</span><input type="number" id="s_fl3_150" value="11416"><em>元</em></div>
+    <div class="p-row"><span>3"×300#</span><input type="number" id="s_fl3_300" value="0"><em>元</em></div>
+    <div class="p-row"><span>4"×150#</span><input type="number" id="s_fl4_150" value="15441"><em>元</em></div>
+    <div class="p-row"><span>6"×150#</span><input type="number" id="s_fl6_150" value="44178"><em>元</em></div>
+    <div class="p-row"><span>6"×300#</span><input type="number" id="s_fl6_300" value="231783"><em>元</em></div>
+    <div class="p-row"><span>安裝工資（1-1/2"以下）</span><input type="number" id="s_fl_inst_s" value="1550"><em>元</em></div>
+    <div class="p-row"><span>安裝工資（2"以上）</span><input type="number" id="s_fl_inst_l" value="1550"><em>元</em></div>
+  </div>
+
+  <button class="save-btn" onclick="saveOK()">✅ 儲存單價設定</button>
+  <div class="save-ok" id="sOK">已儲存，所有計算即時更新</div>
+</div>
+</div>
+
+<script>
+function sw(i){
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.page').forEach((p,j)=>p.classList.toggle('active',i===j));
+}
+function g(id){return parseFloat(document.getElementById(id).value)||0;}
+function fmt(n){return 'NT$'+Math.round(n).toLocaleString();}
+function T(n){return n*1.05;}
+
+/* ── 管徑 label ── */
+const szL={
+  '05':'1/2"','075':'3/4"','1':'1"','125':'1-1/4"',
+  '15':'1-1/2"','2':'2"','25':'2-1/2"','3':'3"','4':'4"'
+};
+
+/* ── 取管材單價 ── */
+function getPipeP(sz,isDark){
+  const gm={075:'s_gip075',1:'s_gip1',125:'s_gip125',15:'s_gip15',2:'s_gip2'};
+  const pm={075:'s_pcp075',1:'s_pcp1',125:'s_pcp125',15:'s_pcp15',2:'s_pcp2'};
+  return g((isDark?pm:gm)[sz]||'s_gip1');
+}
+
+/* ── 取管線工資 ── */
+function getPipeW(sz,type,method,night){
+  // type: bright/darkB/darkC  method: screw/weld  night: bool
+  let prefix;
+  if(type==='bright') prefix=method==='screw'?(night?'s_bsn':'s_bsd'):(night?'s_bwn':'s_bwd');
+  else if(type==='darkB') prefix=method==='screw'?(night?'s_dbsn':'s_dbsd'):(night?'s_dbwn':'s_dbwd');
+  else prefix=method==='screw'?(night?'s_dcsn':'s_dcsd'):(night?'s_dcwn':'s_dcwd');
+  const sfx={075:'075',1:'1',125:'125',15:'15',2:'2'};
+  return g(prefix+(sfx[sz]||'1'));
+}
+
+/* ── 取固定件單價 ── */
+function getFixP(sz,fixType){
+  const small=(sz==='075'||sz==='1');
+  if(fixType==='clamp') return g(small?'s_clamp_s':'s_clamp_m');
+  return g(small?'s_brk_s':'s_brk_m');
+}
+
+/* ── 取油漆單價 ── */
+function getPaintP(sz,len){
+  const small=(sz==='075'||sz==='1');
+  if(len<=3) return g(small?'s_paint_ss':'s_paint_ms');
+  return g(small?'s_paint_sl':'s_paint_ml');
+}
+
+/* ── 取焊口工資（2口以上）── */
+function getWeldP(sz){
+  const m={
+    '05':'s_weld_075_1','075':'s_weld_075_1','1':'s_weld_075_1',
+    '125':'s_weld_075_1','15':'s_weld_15','2':'s_weld_2',
+    '25':'s_weld_3','3':'s_weld_3','4':'s_weld_4'
+  };
+  return g(m[sz]||'s_weld_075_1');
+}
+
+/* ── 取明管牙接工資日間（安全考克安裝用）── */
+function getCockInstW(sz){
+  const m={
+    '05':'s_bsd075','075':'s_bsd075','1':'s_bsd1',
+    '125':'s_bsd125','15':'s_bsd15','2':'s_bsd2',
+    '25':'s_bsd2','3':'s_bsd2','4':'s_bsd2'
+  };
+  return g(m[sz]||'s_bsd1');
+}
+
+/* ── UI 控制 ── */
+function m1SzChange(){
+  const sz=document.getElementById('m1_sz').value;
+  if(sz==='075') document.getElementById('m1_fix').value='clamp';
+  else document.getElementById('m1_fix').value='steel';
+  m1AutoFix();
+}
+function m1TypeChange(){}
+function m1AutoFix(){
+  const len=g('m1_len');
+  const fix=document.getElementById('m1_fix').value;
+  if(fix==='steel') document.getElementById('m1_fix_qty').value=Math.max(1,Math.ceil(len/2));
+  else document.getElementById('m1_fix_qty').value=Math.max(1,Math.ceil(len/1.5));
+}
+function m4TypeChange(){
+  const t=document.getElementById('m4_type').value;
+  document.getElementById('m4_cock_block').style.display=t==='cock'?'':'none';
+  document.getElementById('m4_fl_block').style.display=t==='flange'?'':'none';
+}
+function cmSwTypeChange(){
+  const t=document.getElementById('cm_sw_type').value;
+  document.getElementById('cm_cock_block').style.display=t==='cock'?'':'none';
+  document.getElementById('cm_fl_block').style.display=t==='flange'?'':'none';
+}
+function toggleCombo(k){
+  const map={pipe:'combo_pipe',outlet:'combo_outlet',drill:'combo_drill',sw:'combo_sw'};
+  const chk={pipe:'c_pipe',outlet:'c_outlet',drill:'c_drill',sw:'c_sw'};
+  document.getElementById(map[k]).style.display=document.getElementById(chk[k]).checked?'block':'none';
+}
+function updateCockInfo(){}
+
+/* ══════════════════════════════════════
+   核心計算函式
+══════════════════════════════════════ */
+
+/* 管線延伸 */
+function pipeCalc(sz,type,method,night,len,fixType,fixQty,pcpM,paintOn){
+  const isDark=(type!=='bright');
+  const pipeU=getPipeP(sz,isDark);
+  const wageU=getPipeW(sz,type,method,night);
+  const fixU=getFixP(sz,fixType);
+  const pcpU=g('s_pcptape');
+  const paintU=paintOn?getPaintP(sz,len):0;
+
+  const pipe=pipeU*len;
+  const wage=wageU*len;
+  const fix=fixU*fixQty;
+  const pcp=pcpU*pcpM;
+  const paint=paintU*len;
+  const sub=pipe+wage+fix+pcp+paint;
+
+  const tLabel={bright:'明管',darkB:'暗管乙',darkC:'暗管丙'};
+  const mLabel={screw:'牙接',weld:'焊接'};
+  const matLabel=isDark?'PCP':'GIP';
+  const rows=[];
+  rows.push({l:`管材 ${matLabel} ${szL[sz]} × ${len}m`,v:pipe});
+  rows.push({l:`${night?'夜間':'日間'}${tLabel[type]}${mLabel[method]}工資 × ${len}m`,v:wage});
+  if(fix>0) rows.push({l:`${fixType==='clamp'?'固定夾':'角鋼架'} × ${fixQty}只`,v:fix});
+  if(pcp>0) rows.push({l:`PCP膠帶 × ${pcpM}m`,v:pcp});
+  if(paint>0) rows.push({l:`油漆標示 × ${len}m`,v:paint});
+  return {sub,rows};
+}
+
+/* 焊接出口 */
+function outletCalc(qty){
+  const tee=g('s_tee');
+  const gip=g('s_gip1m')*0.1;
+  const red=g('s_red');
+  const cock=g('s_cock_hf');
+  const weld=g('s_weld1')*3;
+  const paintW=g('s_paint_weld1');
+  const danzao=g('s_danzao')*0.5;
+  const pcptape=g('s_pcptape')*0.5;
+  const perUnit=tee+gip+red+cock+weld+paintW+danzao+pcptape;
+  const sub=perUnit*qty;
+  const rows=[
+    {l:`1" 可焊三通 × ${qty}`,v:tee*qty},
+    {l:`GIP 1" × 0.1m × ${qty}`,v:gip*qty},
+    {l:`1"×3/4" 異徑短接 × ${qty}`,v:red*qty},
+    {l:`1/2" 龍頭考克 × ${qty}`,v:cock*qty},
+    {l:`焊口 1"（3口，2口以上） × ${qty}`,v:weld*qty},
+    {l:`防蝕塗裝 1" × ${qty}口`,v:paintW*qty},
+    {l:`丹曹帶 0.5m × ${qty}`,v:danzao*qty},
+    {l:`PCP膠帶 0.5m × ${qty}`,v:pcptape*qty},
+  ];
+  return {sub,rows};
+}
+
+/* 安裝開關 */
+function switchCalc(type,cockSz,flSv,qty,withInst){
+  if(type==='cock'){
+    const matU=getCockP(cockSz);
+    const mat=matU*qty;
+    const rows=[{l:`安全考克 ${szL[cockSz]} × ${qty}只`,v:mat}];
+    let instSub=0;
+    if(withInst){
+      // 工資 = 1m 牙接工資 + 2口焊接(2口以上) + 丹曹帶0.5m + PCP膠帶0.5m
+      const screwW=getCockInstW(cockSz)*1;     // 1m 牙接
+      const weldW=getWeldP(cockSz)*2;           // 2口焊接
+      const danzao=g('s_danzao')*0.5;
+      const pcptape=g('s_pcptape')*0.5;
+      instSub=screwW+weldW+danzao+pcptape;
+      rows.push({l:`安裝工資（1m 牙接）`,v:screwW});
+      rows.push({l:`安裝工資（焊口 × 2口）`,v:weldW});
+      rows.push({l:`防蝕（丹曹帶+PCP膠帶 0.5m）`,v:danzao+pcptape});
+    }
+    return {sub:mat+instSub,rows};
+  } else {
+    const matU=getFlP(flSv);
+    const mat=matU*qty;
+    const rows=[{l:`法蘭球閥 ${flSv.replace('_','×')} × ${qty}只`,v:mat}];
+    let instSub=0;
+    if(withInst){
+      const big=(flSv.startsWith('2')||flSv.startsWith('3')||flSv.startsWith('4')||flSv.startsWith('6'));
+      instSub=g(big?'s_fl_inst_l':'s_fl_inst_s');
+      rows.push({l:'安裝工資',v:instSub});
+    }
+    return {sub:mat+instSub,rows};
+  }
+}
+
+function getCockP(sz){
+  const m={05:'s_ck05',075:'s_ck075',1:'s_ck1',125:'s_ck125',15:'s_ck15',2:'s_ck2',25:'s_ck25',3:'s_ck3',4:'s_ck4'};
+  return g(m[sz]||'s_ck1');
+}
+function getFlP(sv){
+  const m={'2_150':'s_fl2_150','2_300':'s_fl2_300','3_150':'s_fl3_150','3_300':'s_fl3_300','4_150':'s_fl4_150','6_150':'s_fl6_150','6_300':'s_fl6_300'};
+  return g(m[sv]||'s_fl2_150');
+}
+function getDrillP(sz){
+  const m={'075_1':'s_d075','15':'s_d15','2':'s_d2','3':'s_d3','4':'s_d4','6':'s_d6','8':'s_d8'};
+  return g(m[sz]||'s_d075');
+}
+
+/* ══ 按鈕計算 ══ */
+function calcM1(){
+  const sz=document.getElementById('m1_sz').value;
+  const type=document.getElementById('m1_type').value;
+  const method=document.getElementById('m1_method').value;
+  const night=document.getElementById('m1_time').value==='night';
+  const len=g('m1_len');
+  const fixType=document.getElementById('m1_fix').value;
+  const fixQty=g('m1_fix_qty');
+  const pcpM=g('m1_pcp');
+  const paintOn=document.getElementById('m1_paint').checked;
+  if(len<=0){alert('請輸入長度');return;}
+  const {sub,rows}=pipeCalc(sz,type,method,night,len,fixType,fixQty,pcpM,paintOn);
+  showResult('m1',T(sub),sub,rows);
+}
+function calcM2(){
+  const qty=g('m2_qty');
+  if(qty<1){alert('請輸入出口數量');return;}
+  const {sub,rows}=outletCalc(qty);
+  showResult('m2',T(sub),sub,rows);
+}
+function calcM3(){
+  const sz=document.getElementById('m3_sz').value;
+  const qty=g('m3_qty');
+  const unit=getDrillP(sz);
+  const sub=unit*qty;
+  const szLbl={'075_1':'3/4"/1"','15':'1-1/2"','2':'2"','3':'3"','4':'4"','6':'6"','8':'8"'};
+  showResult('m3',T(sub),sub,[{l:`取心鑽孔 ${szLbl[sz]} × ${qty}處`,v:sub}]);
+}
+function calcM4(){
+  const type=document.getElementById('m4_type').value;
+  const cockSz=document.getElementById('m4_cock_sz').value;
+  const flSv=document.getElementById('m4_fl_sz').value;
+  const qty=g('m4_qty');
+  const withInst=document.getElementById('m4_install').checked;
+  const {sub,rows}=switchCalc(type,cockSz,flSv,qty,withInst);
+  showResult('m4',T(sub),sub,rows);
+}
+function calcCombo(){
+  const hasPipe=document.getElementById('c_pipe').checked;
+  const hasOutlet=document.getElementById('c_outlet').checked;
+  const hasDrill=document.getElementById('c_drill').checked;
+  const hasSw=document.getElementById('c_sw').checked;
+  if(!hasPipe&&!hasOutlet&&!hasDrill&&!hasSw){alert('請至少勾選一個項目');return;}
+
+  let totalSub=0;
+  const allRows=[];
+
+  if(hasPipe){
+    const sz=document.getElementById('cm_sz').value;
+    const type=document.getElementById('cm_type').value;
+    const method=document.getElementById('cm_method').value;
+    const night=document.getElementById('cm_time').value==='night';
+    const len=g('cm_len');
+    const fixQty=g('cm_fix');
+    const fixType=(sz==='075')?'clamp':'steel';
+    const paintOn=document.getElementById('cm_paint').checked;
+    const {sub,rows}=pipeCalc(sz,type,method,night,len,fixType,fixQty,0,paintOn);
+    totalSub+=sub;
+    rows.forEach(r=>allRows.push({l:'【管線】'+r.l,v:r.v}));
+  }
+  if(hasOutlet){
+    const qty=g('cm_outlet_qty');
+    const {sub,rows}=outletCalc(qty);
+    totalSub+=sub;
+    rows.forEach(r=>allRows.push({l:'【出口】'+r.l,v:r.v}));
+  }
+  if(hasDrill){
+    const sz=document.getElementById('cm_drill_sz').value;
+    const qty=g('cm_drill_qty');
+    const unit=getDrillP(sz);
+    const sub=unit*qty;
+    totalSub+=sub;
+    const szLbl={'075_1':'3/4"/1"','15':'1-1/2"','2':'2"','3':'3"','4':'4"','6':'6"','8':'8"'};
+    allRows.push({l:`【鑽孔】${szLbl[sz]} × ${qty}處`,v:sub});
+  }
+  if(hasSw){
+    const type=document.getElementById('cm_sw_type').value;
+    const cockSz=document.getElementById('cm_cock_sz').value;
+    const flSv=document.getElementById('cm_fl_sz').value;
+    const qty=g('cm_sw_qty');
+    const {sub,rows}=switchCalc(type,cockSz,flSv,qty,true);
+    totalSub+=sub;
+    rows.forEach(r=>allRows.push({l:'【開關】'+r.l,v:r.v}));
+  }
+  showResult('m5',T(totalSub),totalSub,allRows);
+}
+
+function showResult(id,total,sub,rows){
+  const el=document.getElementById(id+'_res');
+  el.classList.add('show');
+  document.getElementById(id+'_amt').textContent=fmt(total);
+  document.getElementById(id+'_pre').textContent=`未稅 ${fmt(sub)} ＋ 5% 營業稅`;
+  let html='';
+  rows.forEach(r=>{html+=`<div class="r-row"><span>${r.l}</span><span>${fmt(r.v)}</span></div>`;});
+  html+=`<div class="r-row tot"><span>含稅合計</span><span>${fmt(total)}</span></div>`;
+  document.getElementById(id+'_rows').innerHTML=html;
+}
+function saveOK(){
+  const el=document.getElementById('sOK');
+  el.style.display='block';
+  setTimeout(()=>{el.style.display='none';},2500);
+}
+
+m1SzChange();
+</script>
+</body>
+</html>
